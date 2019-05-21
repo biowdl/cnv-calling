@@ -21,4 +21,103 @@ version 1.0
 # SOFTWARE.
 
 import "tasks/common.wdl" as common
+import "tasks/wiseguy.wdl" as wiseguy
+import "tasks/samtools.wdl" as samtools
 
+workflow wiseguyCnv {
+    input {
+    # IndexedBamFile from common.wdl
+    Array[IndexedBamFile] referenceBams
+    IndexedBamFile sample
+    # Reference from common.wdl
+    Reference reference
+    File? binFile
+    String outputDir = "."
+    }
+
+    # Prepare reference
+    scatter (refBam in referenceBams) {
+        call wiseguy.Count as wiseguyCountReference {
+            input:
+                inputBam = refBam.file,
+                inputBamIndex = refBam.index,
+                reference = reference.fasta,
+                referenceIndex = reference.fai,
+                binFile = binFile,
+                outputBed = outputDir + "/references/" + basename(refBam.file) + ".bed"
+        }
+
+        call wiseguy.GcCorrect as wiseguyGcCorrectReference {
+            input:
+                inputBed = wiseguyCountReference.bedFile,
+                outputBed = outputDir + "/references/" + basename(sample.file) + ".gccorrect.bed",
+                reference = reference.fasta,
+                referenceIndex = reference.fai,
+                binFile = binFile,
+        }
+
+    }
+
+    call wiseguy.Newref as wiseguyNewref {
+        input:
+            inputBeds = wiseguyGcCorrectReference.bedFile,
+            outputBed = outputDir + "/reference.bed",
+            binFile = binFile,
+            reference = reference.fasta,
+            referenceIndex = reference.fai,
+    }
+
+    call samtools.BgzipAndIndex as wiseguyReferenceBgzip {
+        input:
+            type = "bed",
+            outputDir = outputDir,
+            inputFile = wiseguyNewref.bedFile
+    }
+
+
+    # Prepare sample
+    call wiseguy.Count as wiseguyCountSample {
+        input:
+            inputBam = sample.file,
+            inputBamIndex = sample.index,
+            reference = reference.fasta,
+            referenceIndex = reference.fai,
+            binFile = binFile,
+            outputBed = outputDir + "/" + basename(sample.file) + ".bed"
+    }
+
+    call wiseguy.GcCorrect as wiseguyGcCorrectSample {
+        input:
+            inputBed = wiseguyCountSample.bedFile,
+            outputBed = outputDir + "/" + basename(sample.file) + ".gccorrect.bed",
+            reference = reference.fasta,
+            referenceIndex = reference.fai,
+            binFile = binFile,
+    }
+
+    call samtools.BgzipAndIndex as wiseguyGcCorrectSampleIndex {
+        input:
+            type = "bed",
+            outputDir = outputDir,
+            inputFile = wiseguyGcCorrectSample.bedFile
+    }
+
+    # Calculate zscores
+
+    call wiseguy.Zscore as wiseguyZscore {
+        input:
+            inputBed = wiseguyGcCorrectSampleIndex.compressed,
+            inputBedIndex = wiseguyGcCorrectSampleIndex.index,
+            dictionaryFile = wiseguyReferenceBgzip.compressed,
+            dictionaryFileIndex = wiseguyReferenceBgzip.index,
+            reference = reference.fasta,
+            referenceIndex = reference.fai,
+            binFile = binFile,
+    }
+
+    output {
+        File zscores = wiseguyZscore.bedFile
+        File wiseguyReference = wiseguyGcCorrectSampleIndex.compressed
+        File wiseguyReferenceIndex = wiseguyGcCorrectSampleIndex.index
+    }
+}
