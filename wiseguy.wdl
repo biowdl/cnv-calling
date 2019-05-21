@@ -29,8 +29,8 @@ workflow wiseguyCnv {
     # IndexedBamFile from common.wdl
     Array[IndexedBamFile] referenceBams
     IndexedBamFile sample
-    # Reference from common.wdl
-    Reference reference
+    File reference
+    File referenceIndex
     File? binFile
     String outputDir = "."
     }
@@ -41,8 +41,8 @@ workflow wiseguyCnv {
             input:
                 inputBam = refBam.file,
                 inputBamIndex = refBam.index,
-                reference = reference.fasta,
-                referenceIndex = reference.fai,
+                reference = reference,
+                referenceIndex = referenceIndex,
                 binFile = binFile,
                 outputBed = outputDir + "/references/" + basename(refBam.file) + ".bed"
         }
@@ -51,8 +51,8 @@ workflow wiseguyCnv {
             input:
                 inputBed = wiseguyCountReference.bedFile,
                 outputBed = outputDir + "/references/" + basename(sample.file) + ".gccorrect.bed",
-                reference = reference.fasta,
-                referenceIndex = reference.fai,
+                reference = reference,
+                referenceIndex = referenceIndex,
                 binFile = binFile,
         }
 
@@ -63,8 +63,8 @@ workflow wiseguyCnv {
             inputBeds = wiseguyGcCorrectReference.bedFile,
             outputBed = outputDir + "/reference.bed",
             binFile = binFile,
-            reference = reference.fasta,
-            referenceIndex = reference.fai,
+            reference = reference,
+            referenceIndex = referenceIndex,
     }
 
     call samtools.BgzipAndIndex as wiseguyReferenceBgzip {
@@ -80,8 +80,8 @@ workflow wiseguyCnv {
         input:
             inputBam = sample.file,
             inputBamIndex = sample.index,
-            reference = reference.fasta,
-            referenceIndex = reference.fai,
+            reference = reference,
+            referenceIndex = referenceIndex,
             binFile = binFile,
             outputBed = outputDir + "/" + basename(sample.file) + ".bed"
     }
@@ -90,8 +90,8 @@ workflow wiseguyCnv {
         input:
             inputBed = wiseguyCountSample.bedFile,
             outputBed = outputDir + "/" + basename(sample.file) + ".gccorrect.bed",
-            reference = reference.fasta,
-            referenceIndex = reference.fai,
+            reference = reference,
+            referenceIndex = referenceIndex,
             binFile = binFile,
     }
 
@@ -110,8 +110,8 @@ workflow wiseguyCnv {
             inputBedIndex = wiseguyGcCorrectSampleIndex.index,
             dictionaryFile = wiseguyReferenceBgzip.compressed,
             dictionaryFileIndex = wiseguyReferenceBgzip.index,
-            reference = reference.fasta,
-            referenceIndex = reference.fai,
+            reference = reference,
+            referenceIndex = referenceIndex,
             binFile = binFile,
     }
 
