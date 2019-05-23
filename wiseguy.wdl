@@ -23,6 +23,7 @@ version 1.0
 import "tasks/common.wdl" as common
 import "tasks/wiseguy.wdl" as wiseguy
 import "tasks/samtools.wdl" as samtools
+import "tasks/bedtools.wdl" as bedtools
 
 workflow wiseguyCnv {
     input {
@@ -67,11 +68,17 @@ workflow wiseguyCnv {
             referenceIndex = referenceIndex,
     }
 
+    call bedtools.Sort as bedtoolsSortRef {
+        input:
+            inputBed = wiseguyNewref.bedFile
+    }
+
+
     call samtools.BgzipAndIndex as wiseguyReferenceBgzip {
         input:
             type = "bed",
             outputDir = outputDir,
-            inputFile = wiseguyNewref.bedFile
+            inputFile = bedtoolsSortRef.bedFile
     }
 
 
@@ -95,11 +102,16 @@ workflow wiseguyCnv {
             binFile = binFile,
     }
 
+    call bedtools.Sort as bedtoolsSortSample {
+        input:
+            inputBed = wiseguyGcCorrectSample.bedFile
+    }
+
     call samtools.BgzipAndIndex as wiseguyGcCorrectSampleIndex {
         input:
             type = "bed",
             outputDir = outputDir,
-            inputFile = wiseguyGcCorrectSample.bedFile
+            inputFile = bedtoolsSortSample.bedFile
     }
 
     # Calculate zscores
