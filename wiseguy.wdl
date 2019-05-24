@@ -51,7 +51,7 @@ workflow wiseguyCnv {
         call wiseguy.GcCorrect as wiseguyGcCorrectReference {
             input:
                 inputBed = wiseguyCountReference.bedFile,
-                outputBed = outputDir + "/references/" + basename(sample.file) + ".gccorrect.bed",
+                outputBed = outputDir + "/references/" + basename(refBam.file) + ".gccorrect.bed",
                 reference = reference,
                 referenceIndex = referenceIndex,
                 binFile = binFile,
