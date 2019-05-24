@@ -127,6 +127,7 @@ workflow wiseguyCnv {
             reference = reference,
             referenceIndex = referenceIndex,
             binFile = binFile,
+            outputBed = outputDir + "/" + basename(sample.file)+ ".zscores.bed"
     }
 
     output {
