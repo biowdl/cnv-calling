@@ -70,7 +70,8 @@ workflow wiseguyCnv {
 
     call bedtools.Sort as bedtoolsSortRef {
         input:
-            inputBed = wiseguyNewref.bedFile
+            inputBed = wiseguyNewref.bedFile,
+            outputBed = outputDir + "/reference.sorted.bed"
     }
 
 
@@ -104,7 +105,8 @@ workflow wiseguyCnv {
 
     call bedtools.Sort as bedtoolsSortSample {
         input:
-            inputBed = wiseguyGcCorrectSample.bedFile
+            inputBed = wiseguyGcCorrectSample.bedFile,
+            outputBed = outputDir + "/sample.gccorrect.sorted.bed"
     }
 
     call samtools.BgzipAndIndex as wiseguyGcCorrectSampleIndex {
