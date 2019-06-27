@@ -28,8 +28,8 @@ import "tasks/bedtools.wdl" as bedtools
 workflow wiseguyCnv {
     input {
     # IndexedBamFile from common.wdl
-    Array[IndexedBamFile] referenceBams
-    IndexedBamFile sample
+    Array[IndexedBamFile] controlBams
+    IndexedBamFile case
     File reference
     File referenceIndex
     File? binFile
@@ -37,21 +37,21 @@ workflow wiseguyCnv {
     }
 
     # Prepare reference
-    scatter (refBam in referenceBams) {
-        call wiseguy.Count as wiseguyCountReference {
+    scatter (controlBam in controlBams) {
+        call wiseguy.Count as wiseguyCountControls {
             input:
-                inputBam = refBam.file,
-                inputBamIndex = refBam.index,
+                inputBam = controlBam.file,
+                inputBamIndex = controlBam.index,
                 reference = reference,
                 referenceIndex = referenceIndex,
                 binFile = binFile,
-                outputBed = outputDir + "/references/" + basename(refBam.file) + ".bed"
+                outputBed = outputDir + "/references/" + basename(controlBam.file) + ".bed"
         }
 
-        call wiseguy.GcCorrect as wiseguyGcCorrectReference {
+        call wiseguy.GcCorrect as wiseguyGcCorrectControls {
             input:
-                inputBed = wiseguyCountReference.bedFile,
-                outputBed = outputDir + "/references/" + basename(refBam.file) + ".gccorrect.bed",
+                inputBed = wiseguyCountControls.bedFile,
+                outputBed = outputDir + "/references/" + basename(controlBam.file) + ".gccorrect.bed",
                 reference = reference,
                 referenceIndex = referenceIndex,
                 binFile = binFile,
@@ -61,7 +61,7 @@ workflow wiseguyCnv {
 
     call wiseguy.Newref as wiseguyNewref {
         input:
-            inputBeds = wiseguyGcCorrectReference.bedFile,
+            inputBeds = wiseguyGcCorrectControls.bedFile,
             outputBed = outputDir + "/reference.bed",
             binFile = binFile,
             reference = reference,
@@ -84,55 +84,55 @@ workflow wiseguyCnv {
 
 
     # Prepare sample
-    call wiseguy.Count as wiseguyCountSample {
+    call wiseguy.Count as wiseguyCountCase {
         input:
-            inputBam = sample.file,
-            inputBamIndex = sample.index,
+            inputBam = case.file,
+            inputBamIndex = case.index,
             reference = reference,
             referenceIndex = referenceIndex,
             binFile = binFile,
-            outputBed = outputDir + "/" + basename(sample.file) + ".bed"
+            outputBed = outputDir + "/" + basename(case.file) + ".bed"
     }
 
-    call wiseguy.GcCorrect as wiseguyGcCorrectSample {
+    call wiseguy.GcCorrect as wiseguyGcCorrectCase {
         input:
-            inputBed = wiseguyCountSample.bedFile,
-            outputBed = outputDir + "/" + basename(sample.file) + ".gccorrect.bed",
+            inputBed = wiseguyCountCase.bedFile,
+            outputBed = outputDir + "/" + basename(case.file) + ".gccorrect.bed",
             reference = reference,
             referenceIndex = referenceIndex,
             binFile = binFile,
     }
 
-    call bedtools.Sort as bedtoolsSortSample {
+    call bedtools.Sort as bedtoolsSortCase {
         input:
-            inputBed = wiseguyGcCorrectSample.bedFile,
+            inputBed = wiseguyGcCorrectCase.bedFile,
             outputBed = outputDir + "/sample.gccorrect.sorted.bed"
     }
 
-    call samtools.BgzipAndIndex as wiseguyGcCorrectSampleIndex {
+    call samtools.BgzipAndIndex as wiseguyGcCorrectCaseIndex {
         input:
             type = "bed",
             outputDir = outputDir,
-            inputFile = bedtoolsSortSample.bedFile
+            inputFile = bedtoolsSortCase.bedFile
     }
 
     # Calculate zscores
 
     call wiseguy.Zscore as wiseguyZscore {
         input:
-            inputBed = wiseguyGcCorrectSampleIndex.compressed,
-            inputBedIndex = wiseguyGcCorrectSampleIndex.index,
+            inputBed = wiseguyGcCorrectCaseIndex.compressed,
+            inputBedIndex = wiseguyGcCorrectCaseIndex.index,
             dictionaryFile = wiseguyReferenceBgzip.compressed,
             dictionaryFileIndex = wiseguyReferenceBgzip.index,
             reference = reference,
             referenceIndex = referenceIndex,
             binFile = binFile,
-            outputBed = outputDir + "/" + basename(sample.file)+ ".zscores.bed"
+            outputBed = outputDir + "/" + basename(case.file)+ ".zscores.bed"
     }
 
     output {
         File zscores = wiseguyZscore.bedFile
-        File wiseguyReference = wiseguyGcCorrectSampleIndex.compressed
-        File wiseguyReferenceIndex = wiseguyGcCorrectSampleIndex.index
+        File wiseguyReference = wiseguyGcCorrectCaseIndex.compressed
+        File wiseguyReferenceIndex = wiseguyGcCorrectCaseIndex.index
     }
 }
