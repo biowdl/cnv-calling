@@ -1,10 +1,10 @@
 {
-  "wiseguyCnv.sample": {
+  "wiseguyCnv.case": {
     "file": "File",
     "index": "File",
     "md5sum": "File? (optional)"
   },
-  "wiseguyCnv.referenceBams": "Array[WomCompositeType {\n file -> File\nindex -> File\nmd5sum -> File? \n}]",
+  "wiseguyCnv.controlBams": "Array[WomCompositeType {\n file -> File\nindex -> File\nmd5sum -> File? \n}]",
   "wiseguyCnv.binFile": "File? (optional)",
   "wiseguyCnv.reference": "File",
   "wiseguyCnv.referenceIndex": "File",
