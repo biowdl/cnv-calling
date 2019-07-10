@@ -21,11 +21,11 @@ version 1.0
 # SOFTWARE.
 
 import "tasks/common.wdl" as common
-import "tasks/wiseguy.wdl" as wiseguy
+import "tasks/wisestork.wdl" as wisestork
 import "tasks/samtools.wdl" as samtools
 import "tasks/bedtools.wdl" as bedtools
 
-workflow wiseguyCnv {
+workflow wisestorkCnv {
     input {
     # IndexedBamFile from common.wdl
     Array[IndexedBamFile] controlBams
@@ -38,7 +38,7 @@ workflow wiseguyCnv {
 
     # Prepare reference
     scatter (controlBam in controlBams) {
-        call wiseguy.Count as wiseguyCountControls {
+        call wisestork.Count as wisestorkCountControls {
             input:
                 inputBam = controlBam.file,
                 inputBamIndex = controlBam.index,
@@ -48,9 +48,9 @@ workflow wiseguyCnv {
                 outputBed = outputDir + "/references/" + basename(controlBam.file) + ".bed"
         }
 
-        call wiseguy.GcCorrect as wiseguyGcCorrectControls {
+        call wisestork.GcCorrect as wisestorkGcCorrectControls {
             input:
-                inputBed = wiseguyCountControls.bedFile,
+                inputBed = wisestorkCountControls.bedFile,
                 outputBed = outputDir + "/references/" + basename(controlBam.file) + ".gccorrect.bed",
                 reference = reference,
                 referenceIndex = referenceIndex,
@@ -59,9 +59,9 @@ workflow wiseguyCnv {
 
     }
 
-    call wiseguy.Newref as wiseguyNewref {
+    call wisestork.Newref as wisestorkNewref {
         input:
-            inputBeds = wiseguyGcCorrectControls.bedFile,
+            inputBeds = wisestorkGcCorrectControls.bedFile,
             outputBed = outputDir + "/reference.bed",
             binFile = binFile,
             reference = reference,
@@ -70,12 +70,12 @@ workflow wiseguyCnv {
 
     call bedtools.Sort as bedtoolsSortRef {
         input:
-            inputBed = wiseguyNewref.bedFile,
+            inputBed = wisestorkNewref.bedFile,
             outputBed = outputDir + "/reference.sorted.bed"
     }
 
 
-    call samtools.BgzipAndIndex as wiseguyReferenceBgzip {
+    call samtools.BgzipAndIndex as wisestorkReferenceBgzip {
         input:
             type = "bed",
             outputDir = outputDir,
@@ -84,7 +84,7 @@ workflow wiseguyCnv {
 
 
     # Prepare sample
-    call wiseguy.Count as wiseguyCountCase {
+    call wisestork.Count as wisestorkCountCase {
         input:
             inputBam = case.file,
             inputBamIndex = case.index,
@@ -94,9 +94,9 @@ workflow wiseguyCnv {
             outputBed = outputDir + "/" + basename(case.file) + ".bed"
     }
 
-    call wiseguy.GcCorrect as wiseguyGcCorrectCase {
+    call wisestork.GcCorrect as wisestorkGcCorrectCase {
         input:
-            inputBed = wiseguyCountCase.bedFile,
+            inputBed = wisestorkCountCase.bedFile,
             outputBed = outputDir + "/" + basename(case.file) + ".gccorrect.bed",
             reference = reference,
             referenceIndex = referenceIndex,
@@ -105,11 +105,11 @@ workflow wiseguyCnv {
 
     call bedtools.Sort as bedtoolsSortCase {
         input:
-            inputBed = wiseguyGcCorrectCase.bedFile,
+            inputBed = wisestorkGcCorrectCase.bedFile,
             outputBed = outputDir + "/sample.gccorrect.sorted.bed"
     }
 
-    call samtools.BgzipAndIndex as wiseguyGcCorrectCaseIndex {
+    call samtools.BgzipAndIndex as wisestorkGcCorrectCaseIndex {
         input:
             type = "bed",
             outputDir = outputDir,
@@ -118,12 +118,12 @@ workflow wiseguyCnv {
 
     # Calculate zscores
 
-    call wiseguy.Zscore as wiseguyZscore {
+    call wisestork.Zscore as wisestorkZscore {
         input:
-            inputBed = wiseguyGcCorrectCaseIndex.compressed,
-            inputBedIndex = wiseguyGcCorrectCaseIndex.index,
-            dictionaryFile = wiseguyReferenceBgzip.compressed,
-            dictionaryFileIndex = wiseguyReferenceBgzip.index,
+            inputBed = wisestorkGcCorrectCaseIndex.compressed,
+            inputBedIndex = wisestorkGcCorrectCaseIndex.index,
+            dictionaryFile = wisestorkReferenceBgzip.compressed,
+            dictionaryFileIndex = wisestorkReferenceBgzip.index,
             reference = reference,
             referenceIndex = referenceIndex,
             binFile = binFile,
@@ -131,8 +131,8 @@ workflow wiseguyCnv {
     }
 
     output {
-        File zscores = wiseguyZscore.bedFile
-        File wiseguyReference = wiseguyGcCorrectCaseIndex.compressed
-        File wiseguyReferenceIndex = wiseguyGcCorrectCaseIndex.index
+        File zscores = wisestorkZscore.bedFile
+        File wisestorkReference = wisestorkGcCorrectCaseIndex.compressed
+        File wisestorkReferenceIndex = wisestorkGcCorrectCaseIndex.index
     }
 }
